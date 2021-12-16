@@ -56,7 +56,7 @@ app.get("/users", async(request, response)=>{
     response.send(availableUsers)
 })
 
-// find a  mentor
+// find a mentor
 app.get("/mentor/:id", async(request, response)=>{
     const {id} = request.params
     const result = await client.db("mentorship").collection("mentor").findOne({_id:ObjectId(id)})
