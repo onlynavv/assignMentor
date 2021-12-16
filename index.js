@@ -106,7 +106,8 @@ app.put("/changeMentor/:id", async(request, response)=>{
 })
 
 // students assigned for a particular mentor
-
+// will get only the assigned users list, from that document, for that projection is used with the value
+// "1" which means to include in the resultant
 app.get("/getStudents/:id", async(request, response)=>{
     const {id} = request.params
     const result = await client.db("mentorship").collection("mentor").findOne({_id:ObjectId(id)}, {projection: {usersList:1}})
