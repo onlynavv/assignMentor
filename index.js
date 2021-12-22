@@ -111,7 +111,7 @@ app.put("/assignMentor", async(request, response)=>{
 
     const updateUsers = await assignMentorToUsers(userName, mentorName)
 
-    await client.db("mentorship").collection("availableUsers").deleteMany({name:{$in:userName}})
+    const availableUserList = await client.db("mentorship").collection("availableUsers").deleteMany({name:{$in:userName}})
 
     console.log(mentorFromDB)
     response.send({msg:"mentor assigned"})
