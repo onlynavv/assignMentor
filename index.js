@@ -164,7 +164,7 @@ app.put("/changeMentor", async(request, response)=>{
 // "1" which means to include in the resultant
 app.get("/getStudents/:id", async(request, response)=>{
     const {id} = request.params
-    const result = await client.db("mentorship").collection("mentor").findOne({_id:ObjectId(id)}, {projection: {usersList:1}})
+    const result = await client.db("mentorship").collection("mentor").findOne({_id:ObjectId(id)}, {projection: {userList:1}})
     response.send(result)
 })
 
