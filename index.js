@@ -2,6 +2,7 @@ import express from "express"
 import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv"
 import cors from "cors"
+import { getMentorByMentorname,assignUserToMentor,assignMentorToUsers,getUserByUsername,changeUsertoMentor,changeMentor } from "./helper.js";
 
 dotenv.config()
 
@@ -21,7 +22,7 @@ async function createConnection(){
     return client
 }
 
-const client = await createConnection()
+export const client = await createConnection()
 
 app.get("/", (request, response)=>{
     response.send("hai from assign mentor")
@@ -47,6 +48,8 @@ app.get("/mentor", async(request, response)=>{
 app.post("/createUser", async(request, response)=>{
     const data = request.body
     const result = await client.db("mentorship").collection("users").insertOne(data)
+    const availableUsers = await client.db("mentorship").collection("availableUsers").insertOne(data)
+    console.log(availableUsers)
     response.send(result)
 })
 
@@ -70,23 +73,36 @@ app.get("/mentor/:id", async(request, response)=>{
 })
 
 // assign students to a mentor
-app.put("/assignMentor/:id", async(request, response)=>{
-    const {id} = request.params
-    const data = request.body
-    // to that mentor, update his document with the users list which has been assigned to him
-    const result = await client.db("mentorship").collection("mentor").updateOne({_id:ObjectId(id)}, {$set:{usersList: data}})
-    // get that mentor document
-    const mentor = await client.db("mentorship").collection("mentor").findOne({_id:ObjectId(id)})
-    const {name, usersList} = mentor
-    // get all the assigned user's id to his document in an array
-    const assignedUsers = usersList.map((item)=>{
-        return ObjectId(item._id)
-    })
-    // and then update the users list with their assigned mentors respectively, it will affect the users collection, only
-    // to the assigned users document, so that next time when mentors have to be allocated for users, these already 
-    // assigned users name wont show up
-    await client.db("mentorship").collection("users").updateMany({_id:{$in:assignedUsers}}, {$set:{mentor:name}}, {upsert:true})
-    response.send(mentor)
+app.put("/assignMentor", async(request, response)=>{
+    console.log(request.body)
+    const {mentorName, userName} = request.body
+    
+    //const result = await client.db("mentorship").collection("mentor").updateOne({_id:ObjectId(id)}, {$set:{usersList: data}})
+    
+    //const mentor = await client.db("mentorship").collection("mentor").findOne({_id:ObjectId(id)})
+    //const {name, usersList} = mentor
+    
+    // const assignedUsers = usersList.map((item)=>{
+    //     return ObjectId(item._id)
+    // })
+    
+    // await client.db("mentorship").collection("users").updateMany({_id:{$in:assignedUsers}}, {$set:{mentor:name}}, {upsert:true})
+    // response.send(mentor)
+
+    const mentorFromDB = await getMentorByMentorname(mentorName)
+
+    if(!mentorFromDB){
+        response.send({msg:"mentor not found"})
+    }
+
+    const result = await assignUserToMentor(mentorName, userName)
+
+    const updateUsers = await assignMentorToUsers(userName, mentorName)
+
+    await client.db("mentorship").collection("availableUsers").deleteMany({name:{$in:userName}})
+
+    console.log(mentorFromDB)
+    response.send({msg:"mentor assigned"})
 })
 
 // find a particular user
@@ -99,12 +115,36 @@ app.get("/users/:id", async(request, response)=>{
 
 // a student assign / change the mentor
 // if the student already have a mentor, it will upsert the key value in the database, if not it will add that document with the new key value
-app.put("/changeMentor/:id", async(request, response)=>{
-    const {id} = request.params
-    const data = request.body
-    const result = await client.db("mentorship").collection("users").updateOne({_id:ObjectId(id)}, {$set:data}, {upsert:true})
-    const mentor = await client.db("mentorship").collection("users").find({}).toArray()
-    response.send(mentor)
+app.put("/changeMentor", async(request, response)=>{
+    // const {id} = request.params
+    // const data = request.body
+    // const result = await client.db("mentorship").collection("users").updateOne({_id:ObjectId(id)}, {$set:data}, {upsert:true})
+    // const mentor = await client.db("mentorship").collection("users").find({}).toArray()
+    // response.send(mentor)
+
+    const {userName, mentorName} = request.body
+
+    const userFromDB = await getUserByUsername(userName)
+
+    console.log(userFromDB)
+
+    if(!userFromDB){
+        response.send({msg:"user not found"})
+    }
+
+    // change to the new mentor / add mentor to the list of users
+    const result = await changeMentor(userName, mentorName)
+
+    // pull the user from the old mentor
+    const oldMentor = await userFromDB[0].mentor
+    console.log(oldMentor,"line 140")
+    const mentorChange = await changeUsertoMentor(userName, oldMentor)
+
+    // add the user to that new mentor
+    await client.db("mentorship").collection("mentor").updateOne({name:mentorName},{$push:{userList:userName}})
+
+    // remove from the available users
+    await client.db("mentorship").collection("availableUsers").deleteOne({name:userName})
 })
 
 // students assigned for a particular mentor
