@@ -88,18 +88,6 @@ app.get("/mentor/:id", async(request, response)=>{
 app.put("/assignMentor", async(request, response)=>{
     console.log(request.body)
     const {mentorName, userName} = request.body
-    
-    //const result = await client.db("mentorship").collection("mentor").updateOne({_id:ObjectId(id)}, {$set:{usersList: data}})
-    
-    //const mentor = await client.db("mentorship").collection("mentor").findOne({_id:ObjectId(id)})
-    //const {name, usersList} = mentor
-    
-    // const assignedUsers = usersList.map((item)=>{
-    //     return ObjectId(item._id)
-    // })
-    
-    // await client.db("mentorship").collection("users").updateMany({_id:{$in:assignedUsers}}, {$set:{mentor:name}}, {upsert:true})
-    // response.send(mentor)
 
     const mentorFromDB = await getMentorByMentorname(mentorName)
 
@@ -128,11 +116,6 @@ app.get("/users/:id", async(request, response)=>{
 // a student assign / change the mentor
 // if the student already have a mentor, it will upsert the key value in the database, if not it will add that document with the new key value
 app.put("/changeMentor", async(request, response)=>{
-    // const {id} = request.params
-    // const data = request.body
-    // const result = await client.db("mentorship").collection("users").updateOne({_id:ObjectId(id)}, {$set:data}, {upsert:true})
-    // const mentor = await client.db("mentorship").collection("users").find({}).toArray()
-    // response.send(mentor)
 
     const {userName, mentorName} = request.body
 
