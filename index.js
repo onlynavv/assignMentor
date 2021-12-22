@@ -65,6 +65,18 @@ app.get("/users", async(request, response)=>{
     response.send(availableUsers)
 })
 
+// get users from the available users to assign to a mentor
+
+app.get("/availableUsers", async(request, response)=>{
+    const result = await client.db("mentorship").collection("availableUsers").find({}).toArray()
+    const availableUsers = result.filter((user)=>{
+        if(!user.mentor){
+            return user
+        }
+    })
+    response.send(availableUsers)
+})
+
 // find a particular mentor
 app.get("/mentor/:id", async(request, response)=>{
     const {id} = request.params
